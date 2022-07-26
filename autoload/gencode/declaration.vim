@@ -85,5 +85,5 @@ function! gencode#declaration#Generate() "{{{
     endif
 
     call append(l:appendLine, gencode#ConstructIndentLine(l:appendContent))
-    call cursor(l:findLine - 1, 0)
+    call cursor(l:appendLine + 1, 0)
 endfunction "}}}
