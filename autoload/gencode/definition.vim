@@ -280,10 +280,11 @@ function! gencode#definition#Generate() "{{{
         call add(l:appendContent, l:templateDeclaration)
     endif
 
+    let l:lineContent = l:lineContent.' {'
     call add(l:appendContent, l:lineContent)
 
     if l:lineContent =~ '(.*)'
-        call add(l:appendContent, '{')
+        "call add(l:appendContent, '{')
 
         if exists("g:cpp_gencode_function_attach_statement")
             for statement in g:cpp_gencode_function_attach_statement
@@ -304,7 +305,7 @@ function! gencode#definition#Generate() "{{{
         elseif l:returnType =~ '\%(std::\)string\s*$'
             call add(l:appendContent, <SID>ConstructReturnContent('""'))
         elseif l:returnType =~ '\*'
-            call add(l:appendContent, <SID>ConstructReturnContent('NULL'))
+            call add(l:appendContent, <SID>ConstructReturnContent('nullptr'))
         elseif l:returnType =~ '&'
             let l:returnType = substitute(l:returnType, '&', '', 'g')
             let l:returnType = substitute(l:returnType, ' ', '', 'g')
