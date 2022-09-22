@@ -80,14 +80,24 @@ function! s:GetTemplate(line, className) "{{{
     endif
 
     let l:templateContentList = getline(l:searchTemplate, a:line)
+    "echom l:templateContentList
     let l:templateContent = join(l:templateContentList, ' ')
     let l:typeStr = substitute(l:templateContent, '.*<\(.*\)>.*', '\1', '')
+    "echom l:templateContent
+    "echom l:typeStr
 
     let l:typeProtoList = split(l:typeStr, ',')
+    "echom  l:typeProtoList
     let l:typeList = []
     for type in l:typeProtoList
         let l:match = matchlist(type, '\s*\%(typename\|class\)\s*\(\w\+\)\s*\%(=\s*\w\+\)\?')
+        "echo l:match
+        if empty(l:match)
+            call add(l:typeList, type)
+        else
         call add(l:typeList, l:match[1])
+        endif
+            
     endfor
 
     return l:typeList
@@ -139,16 +149,21 @@ function! gencode#definition#Generate() "{{{
     let l:needChangeFile = !l:isInline && ( l:fileExtend ==? 'h' || l:fileExtend ==? 'hpp')
 
     let l:formatedDeclaration  = <SID>FormatDeclaration(l:declaration)
-    let l:declarationDecompose = matchlist(l:formatedDeclaration, '\(\%(\%(\w[a-zA-Z0-9_:*&]*\)\s\)*\)\(\~\?\w[a-zA-Z0-9_]*\s*\((\?.*)\)\?\s*\%(const\)\?\)\s*\%(=\s*\w\+\)\?\s*;') " match function declare, \1 match return type, \2 match function name and argument, \3 match argument
+    "echo l:formatedDeclaration
+    "let l:declarationDecompose = matchlist(l:formatedDeclaration, '\(\%(\%(\w[a-zA-Z0-9_:*&]*\)\s\)*\)\(\~\?\w[a-zA-Z0-9_]*\s*\((\?.*)\)\?\s*\%(const\)\?\)\s*\%(=\s*\w\+\)\?\s*;') " match function declare, \1 match return type, \2 match function name and argument, \3 match argument
+    let l:declarationDecompose = matchlist(l:formatedDeclaration, '\(\%(\%(\w[a-zA-Z0-9_:*&]*\)\s\)*\)\(\~\?\w[a-zA-Z0-9_]*\s*\((\?.*)\)\)\(\s\(const\|noexcept\|override\)\)*\s*\%(=\s*\w\+\)\?\s*;') " match function declare, \1 match return type, \2 match function name and argument, \3 match argument
     try
         let [l:matchall, l:returnType, l:functionBody, l:argument, l:assign; l:rest] = l:declarationDecompose
+        "I don't know fuction matchlist, so use stupid method...
+        let l:functionBody = matchstr( l:matchall, '\(\~\?[A-Za-z0-9_]*(.*)\)\(\s\(const\|noexcept\|override\)\)*' )
         let l:functionBody = substitute(l:functionBody, '\_\s*=[^,)]\+\([,)]\)\?', '\1', 'g')
     catch
         return
     endtry
 
     if empty(l:argument) && match(l:declaration, 'static') == -1
-        echom "no need to define"
+        "echom l:declaration
+        echom "no need to define static"
         return
     endif
 
@@ -307,6 +322,7 @@ function! gencode#definition#Generate() "{{{
         elseif l:returnType =~ '\*'
             call add(l:appendContent, <SID>ConstructReturnContent('nullptr'))
         elseif l:returnType =~ '&'
+            let l:returnType = substitute(l:returnType, 'const', '', 'g')
             let l:returnType = substitute(l:returnType, '&', '', 'g')
             let l:returnType = substitute(l:returnType, ' ', '', 'g')
             call add(l:appendContent, <SID>ConstructReturnContent(l:returnType . '()'))
