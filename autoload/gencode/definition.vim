@@ -74,7 +74,7 @@ function! s:GetTemplate(line, className) "{{{
     endif
 
     call cursor(a:line, 0)
-    let l:searchTemplate = search('template\_\s*<\%(\%(typename\|class\)\_\s\+\w\+\_\s*\%(\_\s*=\_\s*\S\+\)\?\_\s*,\?\_\s*\)\+>\_\s*\%(class\|struct\)\_\s*\<' . a:className . '\>', 'b')
+    let l:searchTemplate = search('template\_\s*<\%(\%(typename\|class\|long\|int\|short\|unsigned\|\(u\)\?int\(8\|16\|32\|64\)_t\)\_\s\+\w\+\_\s*\%(\_\s*=\_\s*\S\+\)\?\_\s*,\?\_\s*\)\+>\_\s*\%(class\|struct\)\_\s*\<' . a:className . '\>', 'b')
     if l:searchTemplate == 0
         return []
     endif
@@ -82,22 +82,18 @@ function! s:GetTemplate(line, className) "{{{
     let l:templateContentList = getline(l:searchTemplate, a:line)
     "echom l:templateContentList
     let l:templateContent = join(l:templateContentList, ' ')
-    let l:typeStr = substitute(l:templateContent, '.*<\(.*\)>.*', '\1', '')
+    let l:typeStr = substitute(l:templateContentList[0], '.*<\(.*\)>.*', '\1', '')
     "echom l:templateContent
     "echom l:typeStr
+    let l:typeStr = substitute(l:typeStr, ',\s', ',', 'g')
 
     let l:typeProtoList = split(l:typeStr, ',')
     "echom  l:typeProtoList
     let l:typeList = []
     for type in l:typeProtoList
-        let l:match = matchlist(type, '\s*\%(typename\|class\)\s*\(\w\+\)\s*\%(=\s*\w\+\)\?')
+        "let l:match = matchlist(type, '\s*\%(typename\|class\uint32_t\)\s*\(\w\+\)\s*\%(=\s*\w\+\)\?')
         "echo l:match
-        if empty(l:match)
-            call add(l:typeList, type)
-        else
-        call add(l:typeList, l:match[1])
-        endif
-            
+        call add(l:typeList, type)
     endfor
 
     return l:typeList
@@ -191,6 +187,7 @@ function! gencode#definition#Generate() "{{{
         let l:templateTypeBody = l:templateTypeBody . '>'
         let l:className = l:className . l:templateTypeBody
     endif
+    let l:className = substitute(l:className, '\(typename\|class\|short\|int\|long\|unsigned\|\(u\)\?int\(8\|16\|32\|64\)_t\)\s', '', 'g')
 
     let l:getNamespaceLine = empty(l:className) ? l:line : l:classBraceLine
 
@@ -242,6 +239,7 @@ function! gencode#definition#Generate() "{{{
     else
         let l:lineContent = l:returnType . l:namespace . l:functionBody
     endif
+    "echo l:lineContent
 
     if empty(l:argument)
         let l:lineContent = l:lineContent . ';'
@@ -289,8 +287,8 @@ function! gencode#definition#Generate() "{{{
     endif
 
     if !empty(l:templateTypeBody)
-        " let l:templateDeclaration = l:templateTypeBody 
-        let l:templateDeclaration = substitute(l:templateTypeBody, '\w\+', 'typename &', 'g')
+        let l:templateDeclaration = l:templateTypeBody 
+        " let l:templateDeclaration = substitute(l:templateTypeBody, '\w\+', 'typename &', 'g')
         let l:templateDeclaration = 'template' . l:templateDeclaration
         call add(l:appendContent, l:templateDeclaration)
     endif
